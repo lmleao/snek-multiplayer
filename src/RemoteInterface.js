@@ -55,14 +55,28 @@ class RemoteInterface {
 
   handleNewClient(client) {
     // process.stdout.write('\x07')
-    client.setEncoding('utf8')
-    this.clients.push(client)
-    this.resetIdleTimer(client, MAX_IDLE_TIMEOUT / 2)
+    client.setEncoding('utf8');
+    this.clients.push(client);
+    this.resetIdleTimer(client, MAX_IDLE_TIMEOUT / 2);
 
-    if (this.newClientHandler) this.newClientHandler(client)
+    this.broadcast(`A new player has joined the game!`, client);
 
-    client.on('data', this.handleClientData.bind(this, client))
-    client.on('end', this.handleClientEnded.bind(this, client))
+    if (this.newClientHandler) this.newClientHandler(client);
+
+    client.on('data', this.handleClientData.bind(this, client));
+    client.on('end', this.handleClientEnded.bind(this, client));
+  }
+
+  broadcast(message, sender) {
+    this.clients.forEach((client) => {
+      if (client !== sender) {
+        try {
+          client.write(message);
+        } catch (e) {
+          console.error(`Failed writing to client.`);
+        }
+      }
+    });
   }
 
   handleClientData(client, data) {
